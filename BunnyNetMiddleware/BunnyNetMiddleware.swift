@@ -72,14 +72,14 @@ class BunnyNetMiddleware: MunkiMiddleware {
 
 // MARK: dylib "interface"
 
-/// Function with C calling style for our dylib. We use it to instantiate the Repo object and return an instance
-@_cdecl("createPlugin")
-public func createPlugin() -> UnsafeMutableRawPointer {
-    return Unmanaged.passRetained(BunnyNetMiddlewareBuilder()).toOpaque()
-}
-
 final class BunnyNetMiddlewareBuilder: MiddlewarePluginBuilder {
     override func create() -> MunkiMiddleware {
         return BunnyNetMiddleware()
     }
+}
+
+/// Function with C calling style for our dylib. We use it to instantiate the Repo object and return an instance
+@_cdecl("createPlugin")
+public func createPlugin() -> UnsafeMutableRawPointer {
+    return Unmanaged.passRetained(BunnyNetMiddlewareBuilder()).toOpaque()
 }
