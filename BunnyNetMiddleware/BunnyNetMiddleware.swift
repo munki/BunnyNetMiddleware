@@ -26,7 +26,11 @@ func generateToken(key: String, path: String, expires: Int, filteredIP: String =
     let tokenContent = "\(key)\(path)\(expires)\(filteredIP)"
     let tokenDigest = Data(Insecure.MD5.hash(data: Data(tokenContent.utf8)))
     let tokenBase64 = tokenDigest.base64EncodedString()
-    let tokenFormatted = tokenBase64.replacingOccurrences(of: "\n", with: "").replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "")
+    let tokenFormatted = tokenBase64
+        .replacingOccurrences(of: "\n", with: "")
+        .replacingOccurrences(of: "+", with: "-")
+        .replacingOccurrences(of: "/", with: "_")
+        .replacingOccurrences(of: "=", with: "")
     return tokenFormatted
 }
 
