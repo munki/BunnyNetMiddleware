@@ -13,11 +13,27 @@
 import CryptoKit
 import Foundation
 
-let BUNDLE_ID = "ManagedInstalls" as CFString
+let BUNDLE_ID = "ManagedInstalls"
 
 /// read a preference
-func pref(_ prefName: String) -> Any? {
-    return CFPreferencesCopyAppValue(prefName as CFString, BUNDLE_ID)
+func pref(_ prefName: String, domain: String = BUNDLE_ID) -> Any? {
+    return CFPreferencesCopyAppValue(prefName as CFString, domain as CFString)
+}
+
+/// return our BunnyNet key
+func getBunnyNetKey() -> String? {
+    // first try our new preferred location
+    if let securityKey = pref("BunnyNetKey") as? String {
+        return securityKey
+    }
+    // attempt to read and return the value as stored for the Python
+    // implementation of this middleware
+    return CFPreferencesCopyValue(
+        "bunny_key" as CFString,
+        "ManagedInstallsProc" as CFString,
+        kCFPreferencesCurrentUser, // current user, which should be root
+        kCFPreferencesAnyHost // IOW, _not_ the ByHost preference
+    ) as? String
 }
 
 /// Generates a bunny.net token.
@@ -38,12 +54,12 @@ class BunnyNetMiddleware: MunkiMiddleware {
     /// process the request
     func processRequest(_ request: MunkiMiddlewareRequest) -> MunkiMiddlewareRequest {
         if request.url.contains("cdn.net") {
-            guard let securityKey = pref("BunnyNetKey") as? String else {
-                print("BunnyNetKey preference not set")
+            guard let securityKey = getBunnyNetKey() else {
+                print("ERROR: BunnyNetKey preference not set")
                 return request
             }
             guard var components = URLComponents(string: request.url) else {
-                print("Can't parse \(request.url) as a valid URL")
+                print("ERROR: Can't parse \(request.url) as a valid URL")
                 return request
             }
             let expires = Int(Date().timeIntervalSince1970 + 3600)
@@ -58,7 +74,7 @@ class BunnyNetMiddleware: MunkiMiddleware {
             ]
             components.queryItems = queryItems
             guard let modifiedURL = components.string else {
-                print("Can't construct modified URL")
+                print("ERROR: Can't construct modified URL")
                 return request
             }
             var modifiedRequest = request
