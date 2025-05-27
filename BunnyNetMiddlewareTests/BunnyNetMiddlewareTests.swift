@@ -18,4 +18,17 @@ struct BunnyNetMiddlewareTests {
         )
         #expect(token == "CNje5yxtqEdjkrN4RvhSlg")
     }
+    
+    /// Test that a non-BunnyNet request is returned unmodified
+    @Test func nonBunnyNetRequestShouldNotBeModified() async throws {
+        let request = MunkiMiddlewareRequest(
+            url: "https://example.com",
+            headers: [:]
+        )
+        // currently MunkiMiddlewareRequest structs are not directly comparable, so we''ll just
+        // compare the instance variables
+        let processedRequest = BunnyNetMiddleware().processRequest(request)
+        #expect(processedRequest.url == request.url)
+        #expect(processedRequest.headers == request.headers)
+    }
 }
