@@ -47,7 +47,27 @@ func generateToken(key: String, path: String, expires: Int, filteredIP: String =
         .replacingOccurrences(of: "+", with: "-")
         .replacingOccurrences(of: "/", with: "_")
         .replacingOccurrences(of: "=", with: "")
+    print("'\(path)' generates '\(tokenFormatted)'")
     return tokenFormatted
+}
+
+/// Generates a bunny.net URL
+func generateBunnyNetURL(url: String, key: String, expires: Int) -> String? {
+    guard var components = URLComponents(string: url) else {
+        print("ERROR: Can't parse \(url) as a valid URL")
+        return nil
+    }
+    let token = generateToken(key: key, path: components.path, expires: expires)
+    let queryItems: [URLQueryItem] = [
+        URLQueryItem(name: "token", value: token),
+        URLQueryItem(name: "expires", value: String(expires)),
+    ]
+    components.queryItems = queryItems
+    guard let modifiedURL = components.string else {
+        print("ERROR: Can't construct modified URL")
+        return nil
+    }
+    return modifiedURL
 }
 
 class BunnyNetMiddleware: MunkiMiddleware {
@@ -58,23 +78,14 @@ class BunnyNetMiddleware: MunkiMiddleware {
                 print("ERROR: BunnyNetKey preference not set")
                 return request
             }
-            guard var components = URLComponents(string: request.url) else {
-                print("ERROR: Can't parse \(request.url) as a valid URL")
-                return request
-            }
             let expires = Int(Date().timeIntervalSince1970 + 3600)
-            let token = generateToken(
+            guard let modifiedURL = generateBunnyNetURL(
+                url: request.url,
                 key: securityKey,
-                path: components.path,
                 expires: expires
-            )
-            let queryItems: [URLQueryItem] = [
-                URLQueryItem(name: "token", value: token),
-                URLQueryItem(name: "expires", value: String(expires)),
-            ]
-            components.queryItems = queryItems
-            guard let modifiedURL = components.string else {
-                print("ERROR: Can't construct modified URL")
+            ) else {
+                // error message was printed by generateBunnyNetURL
+                // return unmodifed request
                 return request
             }
             var modifiedRequest = request
